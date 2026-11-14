@@ -4,7 +4,7 @@ A harmonized burning activity calendar for Central America, built for the 2026 N
 
 **Live app:** https://embercal.vercel.app
 
-EmberCal turns 25 years of NASA FIRMS active fire detections (MODIS since 2000, VIIRS since 2012) into one consistent monthly series, so that years before and after the change of sensor can be compared fairly. Pick a country, draw an area or type coordinates to see when it burns, which years were extreme and how the current month compares with its history. Calendar and hotspot data can be downloaded as CSV.
+EmberCal turns 25 years of NASA FIRMS active fire detections (MODIS since 2000, VIIRS since 2012) into one consistent monthly series, so that years before and after the change of sensor can be compared fairly. Pick a country, draw an area or type coordinates to see when it burns, which years were extreme and how the current month compares with its history. It also shows the active fires of the last 7 days and a fire season outlook (when the critical period starts). Calendar and hotspot data can be downloaded as CSV, charts as PNG, and every view can be shared with a link. Available in English and Spanish.
 
 ## Method in short
 

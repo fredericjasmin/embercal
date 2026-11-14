@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MONTHS } from './data'
+import { useT } from './i18n'
 
 const fmt = v => v == null ? '-' : Math.round(v).toLocaleString('en-US')
 
@@ -11,7 +11,7 @@ function niceMax(v) {
 }
 
 // Line chart with one shared y axis. series: [{key,label,color,values,dash}]
-export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, markers, labelAll }) {
+export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, markers, labelAll, bandLabel, bandTip }) {
   const [hover, setHover] = useState(null)
   const box = useRef(null)
   const [W, setW] = useState(720)
@@ -87,13 +87,13 @@ export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, mark
         <div className="tooltip chart-tip" style={{ left: `${(x(hover) / W) * 100}%` }}>
           <strong>{xLabel(xs[hover], true)}</strong>
           {series.map(s => <div key={s.key}><i className="sw" style={{ background: s.color }} />{s.label}: {fmt(s.values[hover])}</div>)}
-          {band && <div className="muted">Typical range: {fmt(band[hover][0])}-{fmt(band[hover][1])}</div>}
+          {band && <div className="muted">{bandTip || 'Typical range'}: {fmt(band[hover][0])}-{fmt(band[hover][1])}</div>}
         </div>
       )}
       {series.length > 1 && (
         <div className="legend">
           {series.map(s => <span key={s.key} className="lg"><i className={'line' + (s.dash ? ' dashed' : '')} style={{ borderColor: s.color }} />{s.label}</span>)}
-          {band && <span className="lg"><i className="bandsw" />Typical range (25th-75th pct.)</span>}
+          {band && <span className="lg"><i className="bandsw" />{bandLabel || 'Typical range (25th-75th pct.)'}</span>}
         </div>
       )}
     </div>
@@ -101,14 +101,17 @@ export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, mark
 }
 
 export function MonthlyProfile({ base, current, currentLabel, color }) {
+  const { t, months: MONTHS } = useT()
   return (
     <LineChart
       xs={MONTHS.map((_, i) => i)}
       xLabel={(i) => MONTHS[i]}
-      yLabel="Monthly profile"
+      yLabel={t('norm.title')}
       band={base.map(b => [b.p25 ?? 0, b.p75 ?? 0])}
+      bandLabel={t('norm.range')}
+      bandTip={t('norm.rangeTip')}
       series={[
-        { key: 'med', label: 'Median month', color: 'var(--ink-2)', values: base.map(b => b.median), dash: '5 4' },
+        { key: 'med', label: t('norm.median'), color: 'var(--ink-2)', values: base.map(b => b.median), dash: '5 4' },
         { key: 'cur', label: currentLabel, color, values: current },
       ]}
     />

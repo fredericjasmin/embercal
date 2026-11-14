@@ -273,3 +273,12 @@ main.container { padding-top: 40px; padding-bottom: 64px; }
 .ol-bar i { display: block; width: 100%; background: var(--border-strong); border-radius: 4px 4px 0 0; }
 .ol-col.crit .ol-bar i { background: var(--accent); }
 .ol-col.now .ol-bar { outline: 2px solid var(--text); outline-offset: 1px; }
+
+/* language switch, part of the single nav list */
+.nav nav { align-items: center; }
+.lang { display: inline-flex; padding: 2px; margin-left: 6px; border: 1px solid var(--border); border-radius: 999px; flex: none; }
+.lang button { height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 600; }
+.lang button:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.lang button.on { background: var(--text); color: var(--bg); }
+@media (max-width: 640px) { .lang button { height: 32px; font-size: 13px; } }
+@media (max-width: 400px) { .nav nav { gap: 2px; } .nav nav a { padding: 8px 7px; font-size: 13.5px; } .lang { margin-left: 2px; } .lang button { padding: 0 8px; } }

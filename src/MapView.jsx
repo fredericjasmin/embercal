@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { seqColor, isDark } from './colors'
+import { useT } from './i18n'
 
 const TILES = {
   light: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
@@ -11,6 +12,9 @@ const SEL_COLOR = '#2563eb'
 
 // tool: null | 'box' (drag a rectangle) | 'point' (click a center)
 export default function MapView({ g, totals, mask, tool, onDrawn, onPick, sel, recent, recentFlags, showRecent }) {
+  const { t, lang } = useT()
+  const tRef = useRef(t)
+  tRef.current = t
   const el = useRef(null)
   const map = useRef(null)
   const layer = useRef(null)
@@ -90,9 +94,9 @@ export default function MapView({ g, totals, mask, tool, onDrawn, onPick, sel, r
       L.circleMarker([lat, lon], {
         renderer, radius: ago <= 1 ? 5 : 4, weight: 1.5, color: ring, opacity: inside ? 1 : 0.35,
         fillColor: ago <= 1 ? '#d7191c' : '#f0623a', fillOpacity: inside ? 0.95 : 0.3,
-      }).bindTooltip(`${ago === 0 ? 'Today' : ago === 1 ? 'Yesterday' : ago + ' days ago'} · ${sensor === 'V' ? 'VIIRS' : 'MODIS'}${frp ? ` · ${frp} MW` : ''}`).addTo(lg)
+      }).bindTooltip(`${ago === 0 ? tRef.current('map.today') : ago === 1 ? tRef.current('map.yesterday') : tRef.current('map.daysAgo', ago)} · ${sensor === 'V' ? 'VIIRS' : 'MODIS'}${frp ? ` · ${frp} MW` : ''}`).addTo(lg)
     })
-  }, [recent, recentFlags, showRecent])
+  }, [recent, recentFlags, showRecent, lang])
 
   useEffect(() => {
     const lg = selLayer.current

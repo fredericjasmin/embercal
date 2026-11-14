@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { loadGrid, selectionMask, aggregate, cellTotals, toCalendar, baselines, percentileRank, inShape, MONTHS, SERIES } from './data'
+import { loadGrid, selectionMask, aggregate, cellTotals, toCalendar, baselines, percentileRank, inShape, SERIES } from './data'
 import MapView from './MapView'
 import Calendar from './Calendar'
 import { LineChart, MonthlyProfile } from './Charts'
@@ -7,15 +7,17 @@ import Method from './Method'
 import Logo from './Logo'
 import { exportCalendar, exportHotspots, exportImage } from './exportCsv'
 import { IconDownload, IconDraw, IconGlobe, IconX, IconInfo, IconGithub, IconPin } from './Icons'
+import { LangContext, LANGS, useT, initialLang, saveLang } from './i18n'
 
 const fmt = v => v == null ? '-' : Math.round(v).toLocaleString('en-US')
 const ACCENT = 'var(--accent)'
 const REPO = 'https://github.com/fredericjasmin/embercal'
 
-// one list of nav items for every page
+// one list of items for the whole top bar: page links and the language switch
 const NAV = [
-  { id: 'explore', label: 'Explore' },
-  { id: 'method', label: 'Method' },
+  { kind: 'link', id: 'explore', label: 'nav.explore' },
+  { kind: 'link', id: 'method', label: 'nav.method' },
+  { kind: 'lang' },
 ]
 
 const routeOf = () => (location.hash.replace('#', '').split('?')[0] || 'explore')
@@ -32,7 +34,27 @@ function useRoute() {
 }
 
 export default function App() {
+  const [lang, setLangState] = useState(initialLang)
+  const setLang = l => { setLangState(l); saveLang(l) }
+  useEffect(() => { document.documentElement.lang = lang }, [lang])
+  useEffect(() => {
+    const f = () => {
+      const l = new URLSearchParams(location.hash.split('?')[1] || '').get('lang')
+      if ((l === 'en' || l === 'es')) setLangState(cur => { if (cur !== l) saveLang(l); return l })
+    }
+    window.addEventListener('hashchange', f)
+    return () => window.removeEventListener('hashchange', f)
+  }, [])
+  return (
+    <LangContext.Provider value={{ lang, setLang }}>
+      <Shell />
+    </LangContext.Provider>
+  )
+}
+
+function Shell() {
   const route = useRoute()
+  const { t, lang, setLang } = useT()
   const [g, setG] = useState(null)
   useEffect(() => { loadGrid().then(setG) }, [])
 
@@ -45,7 +67,15 @@ export default function App() {
             <span className="brand-name">EmberCal</span>
           </a>
           <nav aria-label="Main">
-            {NAV.map(n => <a key={n.id} href={`#${n.id}`} className={route === n.id ? 'on' : ''} aria-current={route === n.id ? 'page' : undefined}>{n.label}</a>)}
+            {NAV.map(n => n.kind === 'link'
+              ? <a key={n.id} href={`#${n.id}`} className={route === n.id ? 'on' : ''} aria-current={route === n.id ? 'page' : undefined}>{t(n.label)}</a>
+              : (
+                <div key="lang" className="lang" role="group" aria-label={t('nav.lang')}>
+                  {LANGS.map(l => (
+                    <button key={l.id} type="button" className={lang === l.id ? 'on' : ''} aria-pressed={lang === l.id} title={l.name} lang={l.id} onClick={() => setLang(l.id)}>{l.label}</button>
+                  ))}
+                </div>
+              ))}
           </nav>
         </div>
       </header>
@@ -55,9 +85,9 @@ export default function App() {
       </main>
       <footer className="foot">
         <div className="container foot-in">
-          <div className="foot-brand"><Logo size={20} /><span>EmberCal · built by team Bush Coding for the 2026 NASA Space Apps Challenge</span></div>
-          <p>Fire data: NASA FIRMS active fire products, MODIS Collection 6.1 (Terra and Aqua) and VIIRS 375 m (Suomi NPP, NOAA-20). Not an official NASA product.</p>
-          <a className="foot-link" href={REPO} target="_blank" rel="noreferrer"><IconGithub size={16} />Source code</a>
+          <div className="foot-brand"><Logo size={20} /><span>{t('foot.built')}</span></div>
+          <p>{t('foot.data')}</p>
+          <a className="foot-link" href={REPO} target="_blank" rel="noreferrer"><IconGithub size={16} />{t('foot.source')}</a>
         </div>
       </footer>
     </>
@@ -65,16 +95,17 @@ export default function App() {
 }
 
 function Skeleton() {
+  const { t } = useT()
   return (
     <div className="skeleton" aria-busy="true" aria-label="Loading">
       <div className="sk sk-title" /><div className="sk sk-line" /><div className="sk sk-line short" />
       <div className="sk-grid"><div className="sk sk-map" /><div className="sk sk-side" /></div>
-      <p className="muted">Loading 25 years of satellite hotspots…</p>
+      <p className="muted">{t('loading')}</p>
     </div>
   )
 }
 
-/* ---------- shareable state in the URL: #explore?a=...&f=2001-01&t=2026-11&d=H&v=count ---------- */
+/* ---------- shareable state in the URL: #explore?a=...&f=2001-01&t=2026-11&d=H&v=count&lang=en ---------- */
 function readState(g) {
   const q = new URLSearchParams(location.hash.split('?')[1] || '')
   let sel = { type: 'all' }
@@ -97,7 +128,7 @@ function writeState(st) {
   const a = s.type === 'country' ? `c:${s.index}` : s.type === 'bbox' ? `b:${[s.s, s.w, s.n, s.e].map(x => x.toFixed(3)).join(',')}`
     : s.type === 'circle' ? `p:${s.lat.toFixed(4)},${s.lon.toFixed(4)},${s.r}` : 'all'
   const p2 = n => String(n).padStart(2, '0')
-  const q = new URLSearchParams({ a, f: `${st.from.y}-${p2(st.from.m)}`, t: `${st.to.y}-${p2(st.to.m)}`, d: st.key, v: st.mode })
+  const q = new URLSearchParams({ a, f: `${st.from.y}-${p2(st.from.m)}`, t: `${st.to.y}-${p2(st.to.m)}`, d: st.key, v: st.mode, lang: st.lang })
   const url = `#explore?${q.toString()}`
   if (location.hash !== url) history.replaceState(null, '', url)
 }
@@ -121,13 +152,14 @@ function outlook(base, nowM, nowDay) {
   const months = Array.from({ length: best.len }, (_, k) => (best.start + k) % 12)
   const share = months.reduce((s, m) => s + med[m], 0) / total
   const inside = months.includes(nowM)
-  let wait = (best.start - nowM + 12) % 12 // whole months ahead
+  const wait = (best.start - nowM + 12) % 12 // whole months ahead
   const weeks = Math.max(0, Math.round((wait * 30.4 - nowDay) / 7))
   const end = months[months.length - 1]
   return { med, total, max, months, share, inside, weeks, start: best.start, end }
 }
 
 function Explore({ g }) {
+  const { t, lang, months: MONTHS, country } = useT()
   const init = useMemo(() => readState(g), [g])
   const [sel, setSel] = useState(init.sel)
   const [tool, setTool] = useState(null)
@@ -145,7 +177,7 @@ function Explore({ g }) {
   const [copied, setCopied] = useState(false)
   const calRef = useRef(null), normRef = useRef(null), yearRef = useRef(null)
 
-  useEffect(() => { writeState({ sel, from, to, key, mode }) }, [sel, from, to, key, mode])
+  useEffect(() => { writeState({ sel, from, to, key, mode, lang }) }, [sel, from, to, key, mode, lang])
 
   const i0 = Math.max(0, g.indexOf(from.y, from.m))
   const i1 = Math.min(g.months - 1, g.indexOf(to.y, to.m))
@@ -159,11 +191,11 @@ function Explore({ g }) {
   const base = useMemo(() => baselines(calAll, Math.max(g.firstYear + 1, key === 'VR' ? 2012 : 0), lastFull), [calAll, g, key, lastFull])
   const totals = useMemo(() => cellTotals(g, key, i0, i1), [g, key, i0, i1])
 
-  const areaName = sel.type === 'all' ? 'Central America' : sel.type === 'country' ? g.countries[sel.index]
-    : sel.type === 'circle' ? `${sel.r} km around ${sel.lat.toFixed(3)}°, ${sel.lon.toFixed(3)}°`
-    : `${sel.s.toFixed(2)}°, ${sel.w.toFixed(2)}° to ${sel.n.toFixed(2)}°, ${sel.e.toFixed(2)}°`
-  const areaKind = sel.type === 'all' ? 'All 7 countries' : sel.type === 'country' ? 'Country' : sel.type === 'circle' ? 'Around a point' : 'Custom box'
-  const periodLabel = `${MONTHS[from.m - 1]} ${from.y} to ${MONTHS[to.m - 1]} ${to.y}`
+  const areaName = sel.type === 'all' ? t('area.ca') : sel.type === 'country' ? country(g.countries[sel.index])
+    : sel.type === 'circle' ? t('area.circle', sel.r, sel.lat.toFixed(3), sel.lon.toFixed(3))
+    : t('area.box', sel.s.toFixed(2), sel.w.toFixed(2), sel.n.toFixed(2), sel.e.toFixed(2))
+  const areaKind = t(`kind.${sel.type === 'bbox' ? 'box' : sel.type}`)
+  const periodLabel = t('period', MONTHS[from.m - 1], from.y, MONTHS[to.m - 1], to.y)
 
   // headline numbers
   let total = 0
@@ -181,11 +213,16 @@ function Explore({ g }) {
   const pct = percentileRank(lastBase.values, lastProj)
   const ratio = lastBase.median ? lastProj / lastBase.median : null
   const partial = pm ? { y: lm.y, m: lm.m, pace, days: pm.days } : null
-  const peakLabel = `${MONTHS[peak[0].m]}${peak[1] && peak[1].v > 0.6 * peak[0].v ? `-${MONTHS[peak[1].m]}` : ''}`
+  const peakLabel = (() => {
+    const a = peak[0].m, b = peak[1] && peak[1].v > 0.6 * peak[0].v ? peak[1].m : null
+    if (b == null) return MONTHS[a]
+    const [x, y] = (Math.abs(a - b) === 11 ? [Math.max(a, b), Math.min(a, b)] : [Math.min(a, b), Math.max(a, b)])
+    return Math.abs(a - b) === 1 || Math.abs(a - b) === 11 ? `${MONTHS[x]}-${MONTHS[y]}` : `${MONTHS[x]}, ${MONTHS[y]}`
+  })()
   const status = ratio == null ? null : ratio >= 1.5 ? 'high' : ratio <= 0.67 ? 'low' : 'normal'
   const ol = useMemo(() => outlook(base, lm.m, pm ? pm.days : 15), [base, lm.m, pm])
 
-  // active fires of the last 7 days inside the selection
+  // active fires of the last 7 days, flagged inside / outside the selection
   const recent = g.recent && g.recent.last7
   const recentFlags = useMemo(() => {
     if (!recent) return []
@@ -205,7 +242,7 @@ function Explore({ g }) {
     if (coordMode === 'box') {
       const s = +coords.s, w = +coords.w, n = +coords.n, ee = +coords.e
       if ([coords.s, coords.w, coords.n, coords.e].some(x => x === '') || [s, w, n, ee].some(x => isNaN(x)) || s >= n || w >= ee) {
-        setMsg('Enter south < north and west < east, in decimal degrees (for example 10.0, -86.0, 11.2, -84.8).')
+        setMsg('err.box')
         return
       }
       setMsg(null); setTool(null)
@@ -213,7 +250,7 @@ function Explore({ g }) {
     } else {
       const lat = +pt.lat, lon = +pt.lon, r = +pt.r
       if ([pt.lat, pt.lon, pt.r].some(x => x === '') || [lat, lon, r].some(x => isNaN(x)) || Math.abs(lat) > 90 || Math.abs(lon) > 180 || r <= 0 || r > 500) {
-        setMsg('Enter a latitude and longitude in decimal degrees (for example 10.63, -85.44) and a radius between 1 and 500 km.')
+        setMsg('err.point')
         return
       }
       setMsg(null); setTool(null)
@@ -223,7 +260,7 @@ function Explore({ g }) {
 
   const years = []
   for (let y = g.firstYear + 1; y <= g.lastYear; y++) years.push(y)
-  const slug = areaName.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  const slug = (sel.type === 'all' ? 'Central_America' : areaName).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '')
   const p2 = n => String(n).padStart(2, '0')
   const d0 = `${from.y}-${p2(from.m)}-01`
   const d1 = `${to.y}-${p2(to.m)}-${p2(new Date(to.y, to.m, 0).getDate())}`
@@ -237,78 +274,80 @@ function Explore({ g }) {
     try { await navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { /* ignore */ }
   }
   const saveImg = (ref, name) => ref.current && exportImage(ref.current, `embercal_${name}_${slug}.png`)
+  const rPick = +pt.r > 0 ? pt.r : 25
+  const dayLabel = iso => iso.slice(5).replace('-', '/')
 
   return (
     <>
       <section className="intro">
-        <h1>When does Central America burn?</h1>
-        <p className="lead">25 years of NASA satellite fire detections, from two generations of sensors (MODIS and VIIRS), put on one fair scale so every year can be compared with the others.</p>
-        <ol className="howto" aria-label="How to use">
-          <li><strong>Pick an area:</strong> a country, a box or a point on the map, or coordinates.</li>
-          <li><strong>Read the calendar:</strong> each row is a year and each square a month. Darker means more fire.</li>
-          <li><strong>Download the data:</strong> the calendar, every hotspot as CSV, or the charts as images.</li>
+        <h1>{t('intro.title')}</h1>
+        <p className="lead">{t('intro.lead')}</p>
+        <ol className="howto">
+          <li><strong>{t('how.1b')}</strong> {t('how.1')}</li>
+          <li><strong>{t('how.2b')}</strong> {t('how.2')}</li>
+          <li><strong>{t('how.3b')}</strong> {t('how.3')}</li>
         </ol>
       </section>
 
       <section className="panel controls" aria-label="Filters">
         <div className="ctl">
-          <span className="ctl-label">Area</span>
+          <span className="ctl-label">{t('ctl.area')}</span>
           <div className="row">
-            <button className={'chip' + (sel.type === 'all' ? ' on' : '')} aria-pressed={sel.type === 'all'} onClick={reset}><IconGlobe size={16} />All 7 countries</button>
-            <select className={sel.type === 'country' ? 'on' : ''} value={sel.type === 'country' ? sel.index : ''} onChange={e => { if (e.target.value !== '') { setSel({ type: 'country', index: +e.target.value }); setTool(null) } }} aria-label="Country">
-              <option value="">Choose a country</option>
-              {g.countries.map((c, i) => <option key={c} value={i}>{c}</option>)}
+            <button className={'chip' + (sel.type === 'all' ? ' on' : '')} aria-pressed={sel.type === 'all'} onClick={reset}><IconGlobe size={16} />{t('ctl.all')}</button>
+            <select className={sel.type === 'country' ? 'on' : ''} value={sel.type === 'country' ? sel.index : ''} onChange={e => { if (e.target.value !== '') { setSel({ type: 'country', index: +e.target.value }); setTool(null) } }} aria-label={t('ctl.country')}>
+              <option value="">{t('ctl.country')}</option>
+              {g.countries.map((c, i) => <option key={c} value={i}>{country(c)}</option>)}
             </select>
-            <button className={'chip' + (tool === 'box' || (sel.type === 'bbox' && !tool) ? ' on' : '')} aria-pressed={tool === 'box'} onClick={() => setTool(t => t === 'box' ? null : 'box')}><IconDraw size={16} />{tool === 'box' ? 'Now drag on the map' : 'Draw a box'}</button>
-            <button className={'chip' + (tool === 'point' || (sel.type === 'circle' && !tool) ? ' on' : '')} aria-pressed={tool === 'point'} onClick={() => { setTool(t => t === 'point' ? null : 'point'); setCoordMode('point') }}><IconPin size={16} />{tool === 'point' ? 'Now click the map' : 'Pick a point'}</button>
+            <button className={'chip' + (tool === 'box' || (sel.type === 'bbox' && !tool) ? ' on' : '')} aria-pressed={tool === 'box'} onClick={() => setTool(x => x === 'box' ? null : 'box')}><IconDraw size={16} />{tool === 'box' ? t('ctl.boxOn') : t('ctl.box')}</button>
+            <button className={'chip' + (tool === 'point' || (sel.type === 'circle' && !tool) ? ' on' : '')} aria-pressed={tool === 'point'} onClick={() => { setTool(x => x === 'point' ? null : 'point'); setCoordMode('point') }}><IconPin size={16} />{tool === 'point' ? t('ctl.pointOn') : t('ctl.point')}</button>
           </div>
         </div>
         <form className="ctl ctl-coords" onSubmit={applyCoords}>
           <div className="row gap-s">
-            <span className="ctl-label">Or type</span>
-            <div className="seg small" role="group" aria-label="Coordinate type">
-              <button type="button" className={coordMode === 'box' ? 'on' : ''} aria-pressed={coordMode === 'box'} onClick={() => setCoordMode('box')}>A box</button>
-              <button type="button" className={coordMode === 'point' ? 'on' : ''} aria-pressed={coordMode === 'point'} onClick={() => setCoordMode('point')}>A point and radius</button>
+            <span className="ctl-label">{t('ctl.orType')}</span>
+            <div className="seg small" role="group" aria-label={t('ctl.orType')}>
+              <button type="button" className={coordMode === 'box' ? 'on' : ''} aria-pressed={coordMode === 'box'} onClick={() => setCoordMode('box')}>{t('ctl.aBox')}</button>
+              <button type="button" className={coordMode === 'point' ? 'on' : ''} aria-pressed={coordMode === 'point'} onClick={() => setCoordMode('point')}>{t('ctl.aPoint')}</button>
             </div>
           </div>
           <div className="coords">
             {coordMode === 'box'
-              ? [['s', 'South', '10.0'], ['w', 'West', '-86.0'], ['n', 'North', '11.2'], ['e', 'East', '-84.8']].map(([k, label, ph]) => (
-                <label key={k} className="coord"><span>{label}</span>
+              ? [['s', '10.0'], ['w', '-86.0'], ['n', '11.2'], ['e', '-84.8']].map(([k, ph]) => (
+                <label key={k} className="coord"><span>{t(`ctl.${k}`)}</span>
                   <input inputMode="decimal" placeholder={ph} value={coords[k]} onChange={e => setCoords({ ...coords, [k]: e.target.value })} />
                 </label>))
-              : [['lat', 'Latitude', '10.63'], ['lon', 'Longitude', '-85.44'], ['r', 'Radius (km)', '25']].map(([k, label, ph]) => (
-                <label key={k} className="coord"><span>{label}</span>
+              : [['lat', '10.63'], ['lon', '-85.44'], ['r', '25']].map(([k, ph]) => (
+                <label key={k} className="coord"><span>{t(`ctl.${k}`)}</span>
                   <input inputMode="decimal" placeholder={ph} value={pt[k]} onChange={e => setPt({ ...pt, [k]: e.target.value })} />
                 </label>))}
-            <button type="submit" className="btn">Apply</button>
+            <button type="submit" className="btn">{t('ctl.apply')}</button>
           </div>
-          {msg && <p className="field-error" role="alert">{msg}</p>}
+          {msg && <p className="field-error" role="alert">{t(msg)}</p>}
         </form>
         <div className="ctl">
-          <span className="ctl-label">Period</span>
+          <span className="ctl-label">{t('ctl.period')}</span>
           <div className="row">
-            <select value={from.m} onChange={e => setPeriod('from', 'm', +e.target.value)} aria-label="From month">{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
-            <select value={from.y} onChange={e => setPeriod('from', 'y', +e.target.value)} aria-label="From year">{years.map(y => <option key={y}>{y}</option>)}</select>
-            <span className="muted">to</span>
-            <select value={to.m} onChange={e => setPeriod('to', 'm', +e.target.value)} aria-label="To month">{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
-            <select value={to.y} onChange={e => setPeriod('to', 'y', +e.target.value)} aria-label="To year">{years.map(y => <option key={y}>{y}</option>)}</select>
+            <select value={from.m} onChange={e => setPeriod('from', 'm', +e.target.value)} aria-label={t('ctl.fromM')}>{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
+            <select value={from.y} onChange={e => setPeriod('from', 'y', +e.target.value)} aria-label={t('ctl.fromY')}>{years.map(y => <option key={y}>{y}</option>)}</select>
+            <span className="muted">{t('ctl.to')}</span>
+            <select value={to.m} onChange={e => setPeriod('to', 'm', +e.target.value)} aria-label={t('ctl.toM')}>{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
+            <select value={to.y} onChange={e => setPeriod('to', 'y', +e.target.value)} aria-label={t('ctl.toY')}>{years.map(y => <option key={y}>{y}</option>)}</select>
           </div>
         </div>
         <div className="ctl">
-          <span className="ctl-label">Data</span>
-          <div className="seg" role="group" aria-label="Data source">
-            {Object.entries(SERIES).map(([k, s]) => <button key={k} className={key === k ? 'on' : ''} aria-pressed={key === k} onClick={() => setKey(k)}>{s.label}</button>)}
+          <span className="ctl-label">{t('ctl.data')}</span>
+          <div className="seg" role="group" aria-label={t('ctl.data')}>
+            {Object.keys(SERIES).map(k => <button key={k} className={key === k ? 'on' : ''} aria-pressed={key === k} onClick={() => setKey(k)}>{t(`series.${k}`)}</button>)}
           </div>
         </div>
         <div className="ctl ctl-share">
-          <span className="ctl-label">Share this view</span>
-          <button className="btn" onClick={copyLink}>{copied ? 'Link copied' : 'Copy link'}</button>
+          <span className="ctl-label">{t('ctl.share')}</span>
+          <button className="btn" onClick={copyLink}>{copied ? t('ctl.copied') : t('ctl.copy')}</button>
         </div>
       </section>
 
       {key !== 'H' && (
-        <p className="note"><IconInfo size={18} /><span>You are viewing raw {SERIES[key].short} detections. {key === 'MR' ? 'Before July 2002 only one MODIS satellite (Terra) was flying, so early years look quieter than they were.' : 'VIIRS only exists since 2012, and its sharper pixels count one fire several times.'} Switch to <button className="link" onClick={() => setKey('H')}>Harmonized</button> to compare years fairly.</span></p>
+        <p className="note"><IconInfo size={18} /><span>{t('note.raw', key === 'MR' ? 'MODIS' : 'VIIRS')} {t(`note.${key}`)} {t('note.switch1')} <button className="link" onClick={() => setKey('H')}>{t('series.H')}</button> {t('note.switch2')}</span></p>
       )}
 
       <div className="split">
@@ -317,11 +356,9 @@ function Explore({ g }) {
             onDrawn={b => { setSel({ type: 'bbox', ...b }); setTool(null); setCoordMode('box'); setCoords({ s: b.s.toFixed(2), w: b.w.toFixed(2), n: b.n.toFixed(2), e: b.e.toFixed(2) }) }}
             onPick={p => { const r = +pt.r > 0 ? +pt.r : 25; setSel({ type: 'circle', lat: p.lat, lon: p.lon, r }); setTool(null); setCoordMode('point'); setPt({ lat: p.lat.toFixed(4), lon: p.lon.toFixed(4), r: String(r) }) }} />
           <div className="map-foot">
-            <p className="map-cap">{tool === 'box' ? 'Click and drag to draw a box around the area you want.'
-              : tool === 'point' ? `Click the map to search ${+pt.r > 0 ? pt.r : 25} km around that point.`
-              : `Squares: where satellites saw fire, ${periodLabel}. Faded ones are outside your area.`}</p>
+            <p className="map-cap">{tool === 'box' ? t('map.capBox') : tool === 'point' ? t('map.capPoint', rPick) : t('map.cap', periodLabel)}</p>
             {recent && (
-              <label className="toggle"><input type="checkbox" checked={showRecent} onChange={e => setShowRecent(e.target.checked)} /><span className="dot-live" />Active fires, last 7 days</label>
+              <label className="toggle"><input type="checkbox" checked={showRecent} onChange={e => setShowRecent(e.target.checked)} /><span className="dot-live" />{t('map.recent')}</label>
             )}
           </div>
         </div>
@@ -331,39 +368,39 @@ function Explore({ g }) {
               <h2 className="area">{areaName}</h2>
               <p className="area-sub">{areaKind} · {periodLabel}</p>
             </div>
-            {sel.type !== 'all' && <button className="btn ghost" onClick={reset}><IconX size={16} />Clear</button>}
+            {sel.type !== 'all' && <button className="btn ghost" onClick={reset}><IconX size={16} />{t('clear')}</button>}
           </div>
           <div className="tiles">
             <div className="tile">
-              <span className="tl">Hotspots in the period</span>
+              <span className="tl">{t('tile.total')}</span>
               <span className="tv">{fmt(total)}</span>
-              <span className="ts">Satellite fire detections in this area ({key === 'H' ? 'on the harmonized scale' : SERIES[key].unit}).</span>
+              <span className="ts">{t('tile.totalDesc', key === 'H' ? t('tile.harmScale') : t(`unit.${key}`))}</span>
             </div>
             <div className="tile">
-              <span className="tl">Fire season</span>
+              <span className="tl">{t('tile.season')}</span>
               <span className="tv">{peakLabel}</span>
-              <span className="ts">The months that usually burn the most.</span>
+              <span className="ts">{t('tile.seasonDesc')}</span>
             </div>
             <div className="tile">
-              <span className="tl">Worst year</span>
+              <span className="tl">{t('tile.worst')}</span>
               <span className="tv">{top ? top.y : '-'}</span>
-              <span className="ts">{top ? `${fmt(top.v)} hotspots, the most of any year since ${g.firstYear + 1}.${top.y <= 2002 ? ' Estimated: before mid-2002 only one MODIS satellite was flying.' : ''}` : ''}</span>
+              <span className="ts">{top ? t('tile.worstDesc', top.v, g.firstYear + 1, top.y <= 2002) : ''}</span>
             </div>
             <div className={'tile tile-now' + (status ? ` is-${status}` : '')}>
-              <span className="tl">{MONTHS[lm.m]} {lm.y}{partial ? ' so far' : ''}</span>
+              <span className="tl">{t('tile.now', MONTHS[lm.m], lm.y, !!partial)}</span>
               <span className="tv">{fmt(lastVal)}</span>
               <span className="ts">
-                {status && <span className="badge"><i />{status === 'high' ? 'Above normal' : status === 'low' ? 'Below normal' : 'Normal'}</span>}
+                {status && <span className="badge"><i />{t(`st.${status}`)}</span>}
                 {lastBase.median
-                  ? `${partial ? `Days 1-${partial.days}, on pace for ${fmt(lastProj)}: ` : ''}${ratio >= 1 ? (Math.round(ratio * 10) / 10) + '× ' : Math.round(ratio * 100) + '% of '}a typical ${MONTHS[lm.m]}${pct != null ? `, above ${pct}% of past years.` : '.'}`
-                  : 'No history for this month.'}
+                  ? `${partial ? t('tile.pace', partial.days, lastProj) : ''}${ratio >= 1 ? t('tile.ratioUp', Math.round(ratio * 10) / 10, MONTHS[lm.m]) : t('tile.ratioDown', Math.round(ratio * 100), MONTHS[lm.m])}${pct != null ? t('tile.pct', pct) : '.'}`
+                  : t('tile.noHist')}
               </span>
             </div>
           </div>
           {recent && (
             <div className="live">
               <span className="dot-live" />
-              <span><strong>{recentIn.length.toLocaleString('en-US')}</strong> active {recentIn.length === 1 ? 'fire' : 'fires'} detected in this area in the last 7 days ({g.recent.last7From.slice(5).replace('-', '/')} to {g.recent.lastDay.slice(5).replace('-', '/')}).</span>
+              <span>{t('live', recentIn.length, dayLabel(g.recent.last7From), dayLabel(g.recent.lastDay))}</span>
             </div>
           )}
         </div>
@@ -373,18 +410,18 @@ function Explore({ g }) {
         <section className="panel block outlook">
           <div className="block-head">
             <div>
-              <h2>Fire season outlook</h2>
-              <p className="muted">What a normal year looks like here, month by month, based on {lastFull - g.firstYear} years of harmonized data.</p>
+              <h2>{t('ol.title')}</h2>
+              <p className="muted">{t('ol.desc', lastFull - g.firstYear)}</p>
             </div>
           </div>
           <div className="ol-grid">
             <div className="ol-text">
-              <p className="ol-big">{ol.inside ? 'The critical period is now.' : ol.weeks <= 1 ? 'The critical period starts this week.' : `The critical period starts in about ${ol.weeks} weeks.`}</p>
-              <p>In this area, <strong>{MONTHS[ol.start]}{ol.months.length > 1 ? ` to ${MONTHS[ol.end]}` : ''}</strong> usually concentrates <strong>{Math.round(ol.share * 100)}%</strong> of the year’s fire detections.{!ol.inside && ` Plan patrols, burn permits and community alerts before ${MONTHS[ol.start]}.`}</p>
+              <p className="ol-big">{ol.inside ? t('ol.now') : ol.weeks <= 1 ? t('ol.week') : t('ol.weeks', ol.weeks)}</p>
+              <p>{t('ol.body', ol.months.length > 1 ? t('range', MONTHS[ol.start], MONTHS[ol.end]) : MONTHS[ol.start], Math.round(ol.share * 100), ol.inside, MONTHS[ol.start])}</p>
             </div>
-            <div className="ol-bars" role="img" aria-label="Typical hotspots per month">
+            <div className="ol-bars" role="img" aria-label={t('ol.aria')}>
               {ol.med.map((v, m) => (
-                <div key={m} className={'ol-col' + (ol.months.includes(m) ? ' crit' : '') + (m === lm.m ? ' now' : '')} title={`${MONTHS[m]}: ${fmt(v)} hotspots in a typical year`}>
+                <div key={m} className={'ol-col' + (ol.months.includes(m) ? ' crit' : '') + (m === lm.m ? ' now' : '')} title={t('ol.bar', MONTHS[m], v)}>
                   <div className="ol-bar"><i style={{ height: `${Math.max(2, (v / ol.max) * 100)}%` }} /></div>
                   <span>{MONTHS[m][0]}</span>
                 </div>
@@ -397,38 +434,36 @@ function Explore({ g }) {
       <section className="panel block" ref={calRef}>
         <div className="block-head">
           <div>
-            <h2>Burning calendar</h2>
-            <p className="muted">{mode === 'anomaly'
-              ? 'Compared with a normal year: red months burned more than usual for that month, blue ones less, gray ones about the same.'
-              : 'Each row is a year and each square a month. The darker the square, the more fire was detected.'}</p>
+            <h2>{t('cal.title')}</h2>
+            <p className="muted">{mode === 'anomaly' ? t('cal.descA') : t('cal.descC')}</p>
             <p className="block-meta">{areaName} · {periodLabel} · EmberCal (NASA FIRMS MODIS + VIIRS)</p>
           </div>
-          <div className="seg no-export" role="group" aria-label="Calendar view">
-            <button className={mode === 'count' ? 'on' : ''} aria-pressed={mode === 'count'} onClick={() => setMode('count')}>Hotspots</button>
-            <button className={mode === 'anomaly' ? 'on' : ''} aria-pressed={mode === 'anomaly'} onClick={() => setMode('anomaly')}>Compared with normal</button>
+          <div className="seg no-export" role="group" aria-label={t('cal.title')}>
+            <button className={mode === 'count' ? 'on' : ''} aria-pressed={mode === 'count'} onClick={() => setMode('count')}>{t('cal.hot')}</button>
+            <button className={mode === 'anomaly' ? 'on' : ''} aria-pressed={mode === 'anomaly'} onClick={() => setMode('anomaly')}>{t('cal.cmp')}</button>
           </div>
         </div>
-        <Calendar cal={cal} base={base} mode={mode} unit={SERIES[key].unit} highlight={top && top.y} partialFrom={partial} />
+        <Calendar cal={cal} base={base} mode={mode} unit={t(`unit.${key}`)} highlight={top && top.y} partialFrom={partial} />
         <div className="actions no-export">
-          <button className="btn primary" onClick={() => exportCalendar(`embercal_calendar_${slug}_${key}.csv`, cal, `${SERIES[key].label} hotspots, ${areaName}, ${periodLabel}`)}><IconDownload size={16} />Calendar (CSV)</button>
+          <button className="btn primary" onClick={() => exportCalendar(`embercal_calendar_${slug}_${key}.csv`, cal, `${t(`series.${key}`)}, ${areaName}, ${periodLabel}`)}><IconDownload size={16} />{t('cal.csv')}</button>
           <button className="btn" disabled={busy != null} onClick={async () => {
             setBusy(0)
             const n = await exportHotspots(`embercal_hotspots_${slug}_${d0}_${d1}.csv`, sel, sel.type === 'country' ? g.countries[sel.index] : null, d0, d1, p => setBusy(p))
             setBusy(null)
-            setDlMsg(n ? null : 'There are no hotspots in this area and period.')
-          }}><IconDownload size={16} />{busy != null ? `Preparing… ${Math.round(busy * 100)}%` : 'Every hotspot (CSV)'}</button>
-          <button className="btn" onClick={() => saveImg(calRef, 'calendar')}><IconDownload size={16} />Image (PNG)</button>
+            setDlMsg(n ? null : 'cal.none')
+          }}><IconDownload size={16} />{busy != null ? t('cal.prep', Math.round(busy * 100)) : t('cal.all')}</button>
+          <button className="btn" onClick={() => saveImg(calRef, 'calendar')}><IconDownload size={16} />{t('cal.png')}</button>
         </div>
-        {dlMsg && <p className="field-error" role="status">{dlMsg}</p>}
+        {dlMsg && <p className="field-error" role="status">{t(dlMsg)}</p>}
       </section>
 
       <section className="panel block" ref={normRef}>
         <div className="block-head">
           <div>
-            <h2>A normal year</h2>
-            <p className="muted">How much a typical month burns here (dashed line and shaded range), and how {lm.y} is going.</p>
+            <h2>{t('norm.title')}</h2>
+            <p className="muted">{t('norm.desc', lm.y)}</p>
           </div>
-          <button className="btn ghost no-export" onClick={() => saveImg(normRef, 'normal_year')}><IconDownload size={16} />PNG</button>
+          <button className="btn ghost no-export" onClick={() => saveImg(normRef, 'normal_year')}><IconDownload size={16} />{t('png')}</button>
         </div>
         <MonthlyProfile base={base} color={ACCENT} currentLabel={String(lm.y)}
           current={MONTHS.map((_, m) => { const i = g.indexOf(lm.y, m + 1); return i <= lastIdx ? series[i] : null })} />
@@ -436,13 +471,13 @@ function Explore({ g }) {
       <section className="panel block" ref={yearRef}>
         <div className="block-head">
           <div>
-            <h2>Year by year</h2>
-            <p className="muted">Total hotspots per complete year in this area.</p>
+            <h2>{t('year.title')}</h2>
+            <p className="muted">{t('year.desc')}</p>
           </div>
-          <button className="btn ghost no-export" onClick={() => saveImg(yearRef, 'year_by_year')}><IconDownload size={16} />PNG</button>
+          <button className="btn ghost no-export" onClick={() => saveImg(yearRef, 'year_by_year')}><IconDownload size={16} />{t('png')}</button>
         </div>
-        <LineChart xs={yearly.map(r => r.y)} xLabel={y => String(y)} yLabel="Hotspots per year"
-          series={[{ key: 'y', label: SERIES[key].label, color: ACCENT, values: yearly.map(r => r.v) }]} />
+        <LineChart xs={yearly.map(r => r.y)} xLabel={y => String(y)} yLabel={t('year.title')}
+          series={[{ key: 'y', label: t(`series.${key}`), color: ACCENT, values: yearly.map(r => r.v) }]} />
       </section>
     </>
   )
