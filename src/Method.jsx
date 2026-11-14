@@ -85,6 +85,13 @@ export default function Method({ g }) {
         <li>MODIS Terra's orbit has drifted since 2020; this does not affect the calendar after 2012, which uses VIIRS.</li>
       </ul>
 
+      <h2>Accessibility</h2>
+      <ul>
+        <li>The calendar uses a single-hue color ramp whose lightness grows step by step, so it reads the same with color blindness and in grayscale (checked with an automated palette validator: monotone lightness, visible gaps between steps, one hue).</li>
+        <li>The “compared with normal” view uses a blue to red scale with a neutral gray middle, a pairing that stays distinguishable for the common forms of color blindness. Every square also shows its exact value on hover, and every chart can be downloaded as CSV.</li>
+        <li>Light and dark themes follow the device setting; the layout works from 320 px phones to wide screens.</li>
+      </ul>
+
       <h2>Data</h2>
       <ul>
         <li>NASA FIRMS, MODIS Collection 6.1 active fire product (MCD14ML), Terra and Aqua, Nov 2000-Dec 2025.</li>

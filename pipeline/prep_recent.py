@@ -98,6 +98,15 @@ def flat(df, col, nd):
 
 today = dt.date.fromisoformat(max(m.acq_date.max(), n.acq_date.max()))
 last_mi = month_idx(today.year, today.month)
+
+# active fires of the last 7 days (VIIRS on any satellite + MODIS), one point per ~1 km cell and day
+since = (today - dt.timedelta(days=6)).isoformat()
+lv = pd.concat([s.assign(sensor='V'), n.assign(sensor='V'), m.assign(sensor='M')])
+lv = lv[lv.acq_date >= since].sort_values('frp', ascending=False)
+lv = lv.drop_duplicates(['fi', 'fj', 'acq_date'])
+last7 = [[round(float(a), 4), round(float(b), 4), (today - dt.date.fromisoformat(d)).days, sn, round(float(fp), 1)]
+         for a, b, d, sn, fp in lv[['latitude', 'longitude', 'acq_date', 'sensor', 'frp']].itertuples(index=False)]
+print('last 7 days:', len(last7), 'points since', since)
 recent = {
     'months': last_mi + 1,
     'H': flat(H, 'H', 1), 'MR': flat(MR, 'MR', 0), 'VR': flat(VR, 'VR', 0),
@@ -107,6 +116,8 @@ recent = {
                      'daysInMonth': calendar.monthrange(today.year, today.month)[1]},
     'snppLastDay': snpp_last,
     'noaa20Ratio': round(ratio_n20, 3),
+    'last7': last7,
+    'last7From': since,
 }
 with open(os.path.join(OUT, 'recent.json'), 'w') as f:
     json.dump(recent, f, separators=(',', ':'))

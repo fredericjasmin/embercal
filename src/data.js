@@ -43,6 +43,7 @@ export async function loadGrid() {
   g.lastMonth = last.m
   g.firstYear = y0
   g.bounds = cellBounds(g)
+  g.cellIndex = new Map(g.cells.map(([i, j], c) => [`${i},${j}`, c]))
   cache = g
   return g
 }
@@ -51,7 +52,22 @@ function cellBounds(g) {
   return g.cells.map(([i, j]) => [i * g.cell, j * g.cell, (i + 1) * g.cell, (j + 1) * g.cell])
 }
 
-// selection: {type:'all'} | {type:'country', index} | {type:'bbox', s,w,n,e}
+// great-circle distance in km
+export function distKm(lat1, lon1, lat2, lon2) {
+  const R = 6371, rad = Math.PI / 180
+  const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+// is a point inside a geometric selection (bbox or circle)? countries are handled by the caller
+export function inShape(sel, lat, lon) {
+  if (sel.type === 'bbox') return lat >= sel.s && lat <= sel.n && lon >= sel.w && lon <= sel.e
+  if (sel.type === 'circle') return distKm(sel.lat, sel.lon, lat, lon) <= sel.r
+  return true
+}
+
+// selection: {type:'all'} | {type:'country', index} | {type:'bbox', s,w,n,e} | {type:'circle', lat, lon, r (km)}
 export function selectionMask(g, sel) {
   const mask = new Uint8Array(g.cells.length)
   for (let c = 0; c < g.cells.length; c++) {
@@ -59,11 +75,20 @@ export function selectionMask(g, sel) {
     else if (sel.type === 'country') mask[c] = g.cellCountry[c] === sel.index ? 1 : 0
     else {
       const [s, w, n, e] = g.bounds[c]
-      const cy = (s + n) / 2, cx = (w + e) / 2
-      mask[c] = cy >= sel.s && cy <= sel.n && cx >= sel.w && cx <= sel.e ? 1 : 0
+      mask[c] = inShape(sel, (s + n) / 2, (w + e) / 2) ? 1 : 0
     }
   }
   return mask
+}
+
+// bounding box of any geometric selection, for picking point tiles
+export function selBox(sel) {
+  if (sel.type === 'bbox') return sel
+  if (sel.type === 'circle') {
+    const dLat = sel.r / 111, dLon = sel.r / (111 * Math.cos(sel.lat * Math.PI / 180))
+    return { s: sel.lat - dLat, n: sel.lat + dLat, w: sel.lon - dLon, e: sel.lon + dLon }
+  }
+  return null
 }
 
 export function aggregate(g, mask, key) {
