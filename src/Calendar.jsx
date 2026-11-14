@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { MONTHS } from './data'
 import { seqColor, divColor, seqRamp, DIV_LEGEND } from './colors'
 
-const fmt = v => v == null ? '–' : v >= 100 ? Math.round(v).toLocaleString('en-US') : (Math.round(v * 10) / 10).toLocaleString('en-US')
+const fmt = v => v == null ? '-' : v >= 100 ? Math.round(v).toLocaleString('en-US') : (Math.round(v * 10) / 10).toLocaleString('en-US')
 
 export default function Calendar({ cal, base, mode, unit, highlight, partialFrom }) {
   const [tip, setTip] = useState(null)

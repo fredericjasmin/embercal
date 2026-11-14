@@ -6,9 +6,9 @@ import { LineChart, MonthlyProfile } from './Charts'
 import Method from './Method'
 import Logo from './Logo'
 import { exportCalendar, exportHotspots } from './exportCsv'
-import { IconPin, IconCalendar, IconDownload, IconFlame, IconTrophy, IconPulse, IconSum, IconDraw, IconGlobe, IconX, IconInfo, IconGithub } from './Icons'
+import { IconDownload, IconDraw, IconGlobe, IconX, IconInfo, IconGithub } from './Icons'
 
-const fmt = v => v == null ? '–' : Math.round(v).toLocaleString('en-US')
+const fmt = v => v == null ? '-' : Math.round(v).toLocaleString('en-US')
 const ACCENT = 'var(--accent)'
 const REPO = 'https://github.com/fredericjasmin/embercal'
 
@@ -38,8 +38,8 @@ export default function App() {
       <header className="nav">
         <div className="container nav-in">
           <a href="#explore" className="brand">
-            <Logo size={30} />
-            <span className="brand-text"><span className="brand-name">EmberCal</span><span className="brand-sub">Burning calendar · Central America</span></span>
+            <Logo size={26} />
+            <span className="brand-name">EmberCal</span>
           </a>
           <nav aria-label="Main">
             {NAV.map(n => <a key={n.id} href={`#${n.id}`} className={route === n.id ? 'on' : ''} aria-current={route === n.id ? 'page' : undefined}>{n.label}</a>)}
@@ -52,7 +52,7 @@ export default function App() {
       </main>
       <footer className="foot">
         <div className="container foot-in">
-          <div className="foot-brand"><Logo size={24} /><span>EmberCal · built by team Bush Coding for the 2026 NASA Space Apps Challenge</span></div>
+          <div className="foot-brand"><Logo size={20} /><span>EmberCal · built by team Bush Coding for the 2026 NASA Space Apps Challenge</span></div>
           <p>Fire data: NASA FIRMS active fire products, MODIS Collection 6.1 (Terra and Aqua) and VIIRS 375 m (Suomi NPP, NOAA-20). Not an official NASA product.</p>
           <a className="foot-link" href={REPO} target="_blank" rel="noreferrer"><IconGithub size={16} />Source code</a>
         </div>
@@ -110,7 +110,7 @@ function Explore({ g }) {
   const pct = percentileRank(lastBase.values, lastProj)
   const ratio = lastBase.median ? lastProj / lastBase.median : null
   const partial = pm ? { y: lm.y, m: lm.m, pace, days: pm.days } : null
-  const peakLabel = `${MONTHS[peak[0].m]}${peak[1] && peak[1].v > 0.6 * peak[0].v ? `–${MONTHS[peak[1].m]}` : ''}`
+  const peakLabel = `${MONTHS[peak[0].m]}${peak[1] && peak[1].v > 0.6 * peak[0].v ? `-${MONTHS[peak[1].m]}` : ''}`
 
   const applyCoords = e => {
     e.preventDefault()
@@ -134,15 +134,15 @@ function Explore({ g }) {
         <h1>When does Central America burn?</h1>
         <p className="lead">25 years of NASA satellite fire detections, from two generations of sensors (MODIS and VIIRS), put on one fair scale so every year can be compared with the others.</p>
         <ol className="howto" aria-label="How to use">
-          <li><span className="howto-n">1</span><span><strong>Pick an area</strong> — a country, a box drawn on the map, or coordinates.</span></li>
-          <li><span className="howto-n">2</span><span><strong>Read the calendar</strong> — each row is a year, each square a month; darker means more fire.</span></li>
-          <li><span className="howto-n">3</span><span><strong>Download the data</strong> — the calendar or every hotspot, as CSV.</span></li>
+          <li><strong>Pick an area:</strong> a country, a box drawn on the map, or coordinates.</li>
+          <li><strong>Read the calendar:</strong> each row is a year and each square a month. Darker means more fire.</li>
+          <li><strong>Download the data:</strong> the calendar or every hotspot, as CSV.</li>
         </ol>
       </section>
 
       <section className="panel controls" aria-label="Filters">
         <div className="ctl ctl-area">
-          <span className="ctl-label"><IconPin size={15} />Area</span>
+          <span className="ctl-label">Area</span>
           <div className="row">
             <button className={'chip' + (sel.type === 'all' ? ' on' : '')} aria-pressed={sel.type === 'all'} onClick={() => { setSel({ type: 'all' }); setDrawing(false) }}><IconGlobe size={16} />All 7 countries</button>
             <select className={sel.type === 'country' ? 'on' : ''} value={sel.type === 'country' ? sel.index : ''} onChange={e => { if (e.target.value !== '') { setSel({ type: 'country', index: +e.target.value }); setDrawing(false) } }} aria-label="Country">
@@ -165,7 +165,7 @@ function Explore({ g }) {
           {msg && <p className="field-error" role="alert">{msg}</p>}
         </form>
         <div className="ctl">
-          <span className="ctl-label"><IconCalendar size={15} />Years</span>
+          <span className="ctl-label">Years</span>
           <div className="row">
             <select value={y0} onChange={e => setY0(Math.min(+e.target.value, y1))} aria-label="From year">{years.map(y => <option key={y}>{y}</option>)}</select>
             <span className="muted">to</span>
@@ -173,7 +173,7 @@ function Explore({ g }) {
           </div>
         </div>
         <div className="ctl">
-          <span className="ctl-label"><IconPulse size={15} />Data</span>
+          <span className="ctl-label">Data</span>
           <div className="seg" role="group" aria-label="Data source">
             {Object.entries(SERIES).map(([k, s]) => <button key={k} className={key === k ? 'on' : ''} aria-pressed={key === k} onClick={() => setKey(k)}>{s.label}</button>)}
           </div>
@@ -188,39 +188,39 @@ function Explore({ g }) {
         <div className="panel map-panel">
           <MapView g={g} totals={totals} mask={mask} drawing={drawing} bbox={sel.type === 'bbox' ? sel : null}
             onDrawn={b => { setSel({ type: 'bbox', ...b }); setDrawing(false); setCoords({ s: b.s.toFixed(2), w: b.w.toFixed(2), n: b.n.toFixed(2), e: b.e.toFixed(2) }) }} />
-          <p className="map-cap">{drawing ? 'Click and drag to draw a box around the area you want.' : `Where satellites saw fire, ${y0}–${y1}. Faded cells are outside your area.`}</p>
+          <p className="map-cap">{drawing ? 'Click and drag to draw a box around the area you want.' : `Where satellites saw fire, ${y0}-${y1}. Faded cells are outside your area.`}</p>
         </div>
         <div className="stats">
           <div className="area-head">
             <div>
               <h2 className="area">{areaName}</h2>
-              <p className="area-sub">{areaKind} · {y0}–{y1}</p>
+              <p className="area-sub">{areaKind} · {y0}-{y1}</p>
             </div>
             {sel.type !== 'all' && <button className="btn ghost" onClick={() => { setSel({ type: 'all' }); setDrawing(false) }}><IconX size={16} />Clear</button>}
           </div>
           <div className="tiles">
             <div className="tile">
-              <span className="tl"><span className="ti"><IconSum size={16} /></span>Hotspots, {y0}–{y1}</span>
+              <span className="tl">Hotspots, {y0}-{y1}</span>
               <span className="tv">{fmt(total)}</span>
               <span className="ts">Satellite fire detections in this area ({key === 'H' ? 'on the harmonized scale' : SERIES[key].unit}).</span>
             </div>
             <div className="tile">
-              <span className="tl"><span className="ti"><IconFlame size={16} /></span>Fire season</span>
+              <span className="tl">Fire season</span>
               <span className="tv">{peakLabel}</span>
               <span className="ts">The months that usually burn the most.</span>
             </div>
             <div className="tile">
-              <span className="tl"><span className="ti"><IconTrophy size={16} /></span>Worst year</span>
-              <span className="tv">{top ? top.y : '–'}</span>
+              <span className="tl">Worst year</span>
+              <span className="tv">{top ? top.y : '-'}</span>
               <span className="ts">{top ? `${fmt(top.v)} hotspots, the most since ${g.firstYear + 1}.` : ''}</span>
             </div>
             <div className={'tile tile-now' + (status ? ` is-${status}` : '')}>
-              <span className="tl"><span className="ti"><IconPulse size={16} /></span>{MONTHS[lm.m]} {lm.y}{partial ? ' so far' : ''}</span>
+              <span className="tl">{MONTHS[lm.m]} {lm.y}{partial ? ' so far' : ''}</span>
               <span className="tv">{fmt(lastVal)}</span>
               <span className="ts">
                 {status && <span className="badge"><i />{status === 'high' ? 'Above normal' : status === 'low' ? 'Below normal' : 'Normal'}</span>}
                 {lastBase.median
-                  ? `${partial ? `Days 1–${partial.days}, on pace for ${fmt(lastProj)}: ` : ''}${ratio >= 1 ? (Math.round(ratio * 10) / 10) + '× ' : Math.round(ratio * 100) + '% of '}a typical ${MONTHS[lm.m]}${pct != null ? `, above ${pct}% of past years.` : '.'}`
+                  ? `${partial ? `Days 1-${partial.days}, on pace for ${fmt(lastProj)}: ` : ''}${ratio >= 1 ? (Math.round(ratio * 10) / 10) + '× ' : Math.round(ratio * 100) + '% of '}a typical ${MONTHS[lm.m]}${pct != null ? `, above ${pct}% of past years.` : '.'}`
                   : 'No history for this month.'}
               </span>
             </div>

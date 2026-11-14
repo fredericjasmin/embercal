@@ -37,7 +37,7 @@ export default function Method({ g }) {
       <p className="lead">MODIS has watched fires since 2000 and is being retired. VIIRS took over in 2012 with sharper eyes. Counted naively, the two records disagree by a factor of about five, so any calendar that simply stitches them together invents a huge jump in fire activity in 2012. EmberCal removes that artificial jump.</p>
 
       <h2>The problem, in one chart</h2>
-      <p>Yearly hotspots across Central America. Raw VIIRS sees roughly five times more than raw MODIS for the same fires. Raw MODIS also looks quiet in 2001–2002, because only one of the two MODIS satellites (Terra) was flying before July 2002. The harmonized line is continuous and comparable across the whole period.</p>
+      <p>Yearly hotspots across Central America. Raw VIIRS sees roughly five times more than raw MODIS for the same fires. Raw MODIS also looks quiet in 2001-2002, because only one of the two MODIS satellites (Terra) was flying before July 2002. The harmonized line is continuous and comparable across the whole period.</p>
       <LineChart xs={yearly.ys} xLabel={y => String(y)} yLabel="Hotspots per year by data source"
         markers={[{ i: yearly.ys.indexOf(2012), label: 'VIIRS starts' }]}
         series={[
@@ -50,7 +50,7 @@ export default function Method({ g }) {
       <ol className="steps">
         <li><strong>Same definition of a fire.</strong> Only detections flagged as presumed vegetation fire (type 0) are kept; volcanoes, industrial heat sources and offshore flares are removed. Low-confidence detections are dropped in both sensors (MODIS confidence below 30, VIIRS “low”).</li>
         <li><strong>Same pixel size.</strong> A VIIRS pixel is 375 m wide and a MODIS pixel about 1 km, so one fire can light up several VIIRS pixels where MODIS sees one. VIIRS detections that fall in the same ~1 km cell during the same overpass are counted once. This alone removes {Math.round((1 - v.viirs_1km_dedup_ratio) * 100)}% of the VIIRS count.</li>
-        <li><strong>Same number of satellites.</strong> Before Aqua joined in July 2002, MODIS flew on Terra only. Using 2003–2019, when both flew, we learned how many detections Terra alone misses in each month of the year (Terra + Aqua is {Math.min(...Object.values(v.terra_factor)).toFixed(1)}–{Math.max(...Object.values(v.terra_factor)).toFixed(1)}× Terra alone) and scaled Nov 2000–Jun 2002 accordingly.</li>
+        <li><strong>Same number of satellites.</strong> Before Aqua joined in July 2002, MODIS flew on Terra only. Using 2003-2019, when both flew, we learned how many detections Terra alone misses in each month of the year (Terra + Aqua is {Math.min(...Object.values(v.terra_factor)).toFixed(1)}-{Math.max(...Object.values(v.terra_factor)).toFixed(1)}× Terra alone) and scaled Nov 2000-Jun 2002 accordingly.</li>
         <li><strong>Calibrated where both sensors overlap.</strong> From 2012 both sensors watch the same fires. For every 1° × 1° area and month of the year we measure how many VIIRS-1 km detections correspond to one MODIS detection. Areas with few fires borrow strength from their neighbors’ average and the regional value for that month (statistical shrinkage), and totals are kept equal to what VIIRS measured. The overall ratio is {v.global_ratio.toFixed(2)}.</li>
         <li><strong>One series.</strong> From 2012 on, the calendar uses what VIIRS actually measured (on the 1 km basis). Before 2012, it uses MODIS converted with those ratios. Units are “VIIRS-1 km equivalent detections”.</li>
         {g.recent && (
@@ -59,7 +59,7 @@ export default function Method({ g }) {
       </ol>
 
       <h2>Does it work? A blind test</h2>
-      <p>We calibrated the ratios only with {v.calibration_years[0]}–{v.calibration_years[1]}, then used them to predict what VIIRS would see in {v.validation_years[0]}–{v.validation_years[1]} from MODIS alone, and compared with what VIIRS really saw, area by area and month by month ({v.n.toLocaleString('en-US')} comparisons).</p>
+      <p>We calibrated the ratios only with {v.calibration_years[0]}-{v.calibration_years[1]}, then used them to predict what VIIRS would see in {v.validation_years[0]}-{v.validation_years[1]} from MODIS alone, and compared with what VIIRS really saw, area by area and month by month ({v.n.toLocaleString('en-US')} comparisons).</p>
       <div className="table-wrap">
         <table className="metrics">
           <thead><tr><th scope="col">Method</th><th scope="col">Typical error per area and month</th><th scope="col">Bias in the total</th><th scope="col">Correlation (log)</th></tr></thead>
@@ -70,8 +70,8 @@ export default function Method({ g }) {
           </tbody>
         </table>
       </div>
-      <p className="muted small">Typical error is the median absolute percentage error over area-months with at least 10 VIIRS detections. The remaining bias is within the natural year-to-year variation of the VIIRS/MODIS ratio (3.2–4.2 between 2012 and 2025).</p>
-      <LineChart xs={valX} xLabel={mlabel} yLabel="Blind test, monthly totals"
+      <p className="muted small">Typical error is the median absolute percentage error over area-months with at least 10 VIIRS detections. The remaining bias is within the natural year-to-year variation of the VIIRS/MODIS ratio (3.2-4.2 between 2012 and 2025).</p>
+      <LineChart xs={valX} xLabel={mlabel} labelAll yLabel="Blind test, monthly totals"
         series={[
           { key: 'M', label: 'Raw MODIS', color: C.modis, values: v.series.map(r => r[1]), dash: '5 4' },
           { key: 'V', label: 'VIIRS measured (1 km basis)', color: C.viirs, values: v.series.map(r => r[2]) },
@@ -81,14 +81,14 @@ export default function Method({ g }) {
       <h2>Limitations</h2>
       <ul>
         <li>A hotspot is a hot pixel at the moment a satellite passed, not a fire. Cloud cover, smoke and overpass time affect what is seen; counts are an index of burning activity, not burned area.</li>
-        <li>Ratios assume the relation between sensors in 2012–2025 also held before 2012.</li>
+        <li>Ratios assume the relation between sensors in 2012-2025 also held before 2012.</li>
         <li>MODIS Terra's orbit has drifted since 2020; this does not affect the calendar after 2012, which uses VIIRS.</li>
       </ul>
 
       <h2>Data</h2>
       <ul>
-        <li>NASA FIRMS, MODIS Collection 6.1 active fire product (MCD14ML), Terra and Aqua, Nov 2000–Dec 2025.</li>
-        <li>NASA FIRMS, VIIRS S-NPP 375 m active fire product (VNP14IMGTDL), Jan 2012–Dec 2025.</li>
+        <li>NASA FIRMS, MODIS Collection 6.1 active fire product (MCD14ML), Terra and Aqua, Nov 2000-Dec 2025.</li>
+        <li>NASA FIRMS, VIIRS S-NPP 375 m active fire product (VNP14IMGTDL), Jan 2012-Dec 2025.</li>
         <li>Country yearly archives for Belize, Costa Rica, El Salvador, Guatemala, Honduras, Nicaragua and Panama.</li>
         <li>2026: FIRMS area API, standard and near-real-time MODIS, VIIRS S-NPP and VIIRS NOAA-20, clipped to the seven countries with Natural Earth boundaries.</li>
       </ul>

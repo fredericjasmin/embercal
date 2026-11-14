@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MONTHS } from './data'
 
-const fmt = v => v == null ? '–' : Math.round(v).toLocaleString('en-US')
+const fmt = v => v == null ? '-' : Math.round(v).toLocaleString('en-US')
 
 function niceMax(v) {
   if (v <= 0) return 1
@@ -11,15 +11,24 @@ function niceMax(v) {
 }
 
 // Line chart with one shared y axis. series: [{key,label,color,values,dash}]
-export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, markers }) {
+export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, markers, labelAll }) {
   const [hover, setHover] = useState(null)
-  const W = 720, H = height, pad = { l: 56, r: 16, t: 12, b: 28 }
+  const box = useRef(null)
+  const [W, setW] = useState(720)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setW(Math.max(280, Math.round(e.contentRect.width))))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const H = height, pad = { l: 56, r: 16, t: 12, b: 28 }
   const all = series.flatMap(s => s.values.filter(v => v != null)).concat(band ? band.flatMap(b => [b[1]]) : [])
   const ymax = niceMax(Math.max(...all, 1))
   const x = i => pad.l + (xs.length === 1 ? 0 : (i / (xs.length - 1)) * (W - pad.l - pad.r))
   const y = v => pad.t + (1 - v / ymax) * (H - pad.t - pad.b)
   const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f * ymax)
-  const every = Math.ceil(xs.length / 12)
+  const every = Math.ceil(xs.length / Math.max(4, Math.floor(W / 70)))
 
   const path = vals => {
     let d = '', pen = false
@@ -39,15 +48,15 @@ export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, mark
   }
 
   return (
-    <div className="chart">
-      <svg viewBox={`0 0 ${W} ${H}`} onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img" aria-label={yLabel}>
+    <div className="chart" ref={box}>
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img" aria-label={yLabel}>
         {ticks.map(t => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} className="grid" />
             <text x={pad.l - 8} y={y(t) + 4} textAnchor="end" className="tick">{fmt(t)}</text>
           </g>
         ))}
-        {xs.map((v, i) => i % every === 0 && (
+        {xs.map((v, i) => (labelAll ? xLabel(v) : i % every === 0) && (
           <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="tick">{xLabel(v)}</text>
         ))}
         {band && (
@@ -78,13 +87,13 @@ export function LineChart({ xs, xLabel, series, height = 240, yLabel, band, mark
         <div className="tooltip chart-tip" style={{ left: `${(x(hover) / W) * 100}%` }}>
           <strong>{xLabel(xs[hover], true)}</strong>
           {series.map(s => <div key={s.key}><i className="sw" style={{ background: s.color }} />{s.label}: {fmt(s.values[hover])}</div>)}
-          {band && <div className="muted">Typical range: {fmt(band[hover][0])}–{fmt(band[hover][1])}</div>}
+          {band && <div className="muted">Typical range: {fmt(band[hover][0])}-{fmt(band[hover][1])}</div>}
         </div>
       )}
       {series.length > 1 && (
         <div className="legend">
           {series.map(s => <span key={s.key} className="lg"><i className={'line' + (s.dash ? ' dashed' : '')} style={{ borderColor: s.color }} />{s.label}</span>)}
-          {band && <span className="lg"><i className="bandsw" />Typical range (25th–75th pct.)</span>}
+          {band && <span className="lg"><i className="bandsw" />Typical range (25th-75th pct.)</span>}
         </div>
       )}
     </div>

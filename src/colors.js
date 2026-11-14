@@ -2,7 +2,7 @@
 // Light and dark modes have their own steps; the lightest/darkest step means "near zero".
 
 const SEQ_LIGHT = ['#fbeee4', '#f8d7bf', '#f4bb93', '#ee9a66', '#e3783e', '#cd5a24', '#a8441a', '#7d3214', '#55220e']
-const SEQ_DARK = ['#2a211c', '#4a2a1a', '#6b3419', '#8f411b', '#b3521f', '#d26a2e', '#e98b4f', '#f6b07e', '#fdd6b6']
+const SEQ_DARK = ['#232425', '#45291d', '#6b3419', '#8f411b', '#b3521f', '#d26a2e', '#e98b4f', '#f6b07e', '#fdd6b6']
 
 const DIV_LIGHT = { neg: ['#104281', '#256abf', '#5598e7', '#9ec5f4'], mid: '#f0efec', pos: ['#f4b4a8', '#e8776d', '#c9403f', '#8f2122'] }
 const DIV_DARK = { neg: ['#9ec5f4', '#5598e7', '#256abf', '#184f95'], mid: '#383835', pos: ['#7a2b2a', '#b23b3a', '#e06564', '#f4aca6'] }
