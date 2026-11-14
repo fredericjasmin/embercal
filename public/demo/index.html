@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EmberCal · Project demo</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#ece6dc; --paper:#fffdf9; --ink:#221b15; --ink2:#5f564c; --line:#e6ddd0; --accent:#c2501d; --soft:#fbe7da; --accent-ink:#8a3412; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  h1, h2 { font-family: "Bricolage Grotesque", "Inter", sans-serif; letter-spacing: -0.02em; line-height: 1.08; margin: 0; }
+  .deck { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 28px 16px 60px; }
+  .slide { width: min(1280px, 100%); aspect-ratio: 16 / 9; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; position: relative; overflow: hidden; container-type: inline-size; }
+  .in { position: absolute; inset: 0; padding: 5.2cqw 5.6cqw 4.4cqw; display: flex; flex-direction: column; gap: 2cqw; }
+  .num { position: absolute; right: 3cqw; bottom: 2.4cqw; font-size: 1.1cqw; color: var(--ink2); }
+  .brandline { position: absolute; left: 5.6cqw; bottom: 2.4cqw; display: flex; align-items: center; gap: .8cqw; font-size: 1.1cqw; color: var(--ink2); }
+  .brandline svg { width: 1.8cqw; height: 1.8cqw; }
+  h2 { font-size: 3.6cqw; }
+  .sub { font-size: 1.7cqw; color: var(--ink2); max-width: 70%; margin: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1.25fr; gap: 3.5cqw; flex: 1; min-height: 0; align-items: center; }
+  .cols.even { grid-template-columns: 1fr 1fr; }
+  ul.pts { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.6cqw; }
+  ul.pts li { display: flex; gap: 1.2cqw; font-size: 1.7cqw; line-height: 1.4; }
+  ul.pts b { color: var(--ink); }
+  .dot { flex: none; width: 2.6cqw; height: 2.6cqw; border-radius: 50%; background: var(--soft); color: var(--accent-ink); font-weight: 700; font-size: 1.3cqw; display: grid; place-items: center; margin-top: .1cqw; }
+  .shot { width: 100%; max-height: 100%; object-fit: contain; border-radius: 1.2cqw; border: 1px solid var(--line); background: #fff; display: block; }
+  .big { font-family: "Bricolage Grotesque", sans-serif; font-size: 5cqw; font-weight: 700; color: var(--accent); letter-spacing: -0.03em; line-height: 1; }
+  .stat { display: flex; flex-direction: column; gap: .5cqw; }
+  .stat span { font-size: 1.4cqw; color: var(--ink2); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2cqw; }
+  .stats .stat { background: #faf5ee; border: 1px solid var(--line); border-radius: 1.2cqw; padding: 1.8cqw; }
+  .stats .stat.win { background: var(--soft); border-color: #f0c9ae; }
+  .stats .stat .v { font-family: "Bricolage Grotesque", sans-serif; font-size: 4.2cqw; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .stats .stat.win .v { color: var(--accent); }
+.stats.stack { grid-template-columns: 1fr; gap: 1.1cqw; align-content: center; }
+  .stats.stack .stat { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; align-items: center; column-gap: 2cqw; row-gap: .2cqw; padding: 1.3cqw 1.8cqw; }
+  .stats.stack .stat .v { grid-column: 2; grid-row: 1 / span 2; font-size: 3.6cqw; }
+  .stats.stack .stat span:first-child { font-size: 1.5cqw; color: var(--ink); font-weight: 600; }
+  .tag { display: inline-block; background: var(--soft); color: var(--accent-ink); font-weight: 600; font-size: 1.3cqw; padding: .4cqw 1cqw; border-radius: 99px; }
+
+  /* title slide */
+  .title .in { justify-content: center; gap: 2.4cqw; background: radial-gradient(120% 90% at 100% 100%, #fbe1cd 0, transparent 55%); }
+  .title h1 { font-size: 7.4cqw; }
+  .title .logo { width: 7cqw; height: 7cqw; }
+  .title .tagline { font-size: 2.4cqw; color: var(--ink2); max-width: 52%; margin: 0; }
+  .meta { display: grid; grid-template-columns: auto 1fr; gap: .6cqw 2cqw; font-size: 1.6cqw; margin-top: 1cqw; }
+  .meta dt { color: var(--ink2); }
+  .meta dd { margin: 0; font-weight: 600; }
+  .url { font-weight: 600; color: var(--accent-ink); }
+  .cal-mini { position: absolute; right: 5.6cqw; bottom: 7cqw; display: grid; grid-template-columns: repeat(12, 2.2cqw); gap: .45cqw; opacity: .95; }
+  .cal-mini i { width: 2.2cqw; height: 1.3cqw; border-radius: .35cqw; display: block; }
+
+  .steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2cqw; flex: 1; align-content: center; }
+  .step { background: #faf5ee; border: 1px solid var(--line); border-radius: 1.2cqw; padding: 2cqw; display: flex; flex-direction: column; gap: .8cqw; }
+  .step h3 { margin: 0; font-family: "Bricolage Grotesque", sans-serif; font-size: 2cqw; display: flex; gap: 1cqw; align-items: center; }
+  .step p { margin: 0; font-size: 1.45cqw; color: var(--ink2); line-height: 1.45; }
+  .note { font-size: 1.35cqw; color: var(--ink2); margin: 0; }
+
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html, body { background: #fff; }
+    .deck { padding: 0; gap: 0; }
+    .slide { width: 1280px; height: 720px; border: 0; border-radius: 0; break-after: page; }
+  }
+</style>
+</head>
+<body>
+<main class="deck">
+
+  <!-- 1 -->
+  <section class="slide title"><div class="in">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="6" y="6" width="5.6" height="5.6" rx="1.6" fill="#f6dcc7"/><rect x="13.2" y="6" width="5.6" height="5.6" rx="1.6" fill="#f1c09c"/><rect x="20.4" y="6" width="5.6" height="5.6" rx="1.6" fill="#ec9f6c"/><rect x="6" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#f1c09c"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/><rect x="20.4" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#c9541f"/><rect x="6" y="20.4" width="5.6" height="5.6" rx="1.6" fill="#ec9f6c"/><rect x="13.2" y="20.4" width="5.6" height="5.6" rx="1.6" fill="#c9541f"/><rect x="20.4" y="20.4" width="5.6" height="5.6" rx="1.6" fill="#7c2d10"/></svg>
+    <h1>EmberCal</h1>
+    <p class="tagline">When does Central America burn? 25 years of NASA fire data, from two generations of satellites, on one fair scale.</p>
+    <dl class="meta">
+      <dt>Team</dt><dd>Bush Coding</dd>
+      <dt>Member</dt><dd>Frederic Jasmin</dd>
+      <dt>Challenge</dt><dd>Harmonization of MODIS and VIIRS Hot Spots</dd>
+      <dt>Live app</dt><dd class="url">embercal.vercel.app</dd>
+    </dl>
+    <div class="cal-mini" id="calmini" aria-hidden="true"></div>
+  </div><span class="num">1 / 7</span></section>
+
+  <!-- 2 -->
+  <section class="slide"><div class="in">
+    <h2>Two satellites, two different stories</h2>
+    <p class="sub">Every dry season, wildfires and agricultural burns cover Central America in smoke. NASA has watched them since 2000, but with two generations of sensors that count very differently.</p>
+    <div class="cols">
+      <ul class="pts">
+        <li><span class="dot">1</span><span><b>VIIRS (2012+) sees about 5× more hotspots</b> than MODIS for the same fires: sharper 375 m pixels count one fire several times.</span></li>
+        <li><span class="dot">2</span><span><b>Early MODIS looks too quiet:</b> before July 2002 only one of its two satellites (Terra) was flying.</span></li>
+        <li><span class="dot">3</span><span><b>Stitched naively, the record invents a fake jump in 2012.</b> Responders cannot tell if this season is really unusual.</span></li>
+      </ul>
+      <img class="shot" src="img/problem.png" alt="Yearly hotspots: raw MODIS, raw VIIRS and harmonized series" />
+    </div>
+  </div><span class="brandline"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/></svg>EmberCal · Bush Coding</span><span class="num">2 / 7</span></section>
+
+  <!-- 3 -->
+  <section class="slide"><div class="in">
+    <h2>EmberCal: a burning calendar anyone can read</h2>
+    <div class="cols">
+      <ul class="pts">
+        <li><span class="dot">1</span><span><b>Pick an area:</b> one of 7 countries, a box drawn on the map, or coordinates.</span></li>
+        <li><span class="dot">2</span><span><b>Read the calendar:</b> each row a year, each square a month, from 2001 to this week.</span></li>
+        <li><span class="dot">3</span><span><b>Compare with normal:</b> fire season, worst year, and how this month is going against its history.</span></li>
+        <li><span class="dot">4</span><span><b>Download:</b> the calendar or every hotspot as CSV.</span></li>
+      </ul>
+      <img class="shot" src="img/explore.png" alt="EmberCal explore page" />
+    </div>
+  </div><span class="brandline"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/></svg>EmberCal · Bush Coding</span><span class="num">3 / 7</span></section>
+
+  <!-- 4 -->
+  <section class="slide"><div class="in">
+    <h2>Spot the unusual seasons at a glance</h2>
+    <div class="cols">
+      <ul class="pts">
+        <li><span class="dot">1</span><span><b>Red</b> months burned more than usual for that month; <b>blue</b> ones less.</span></li>
+        <li><span class="dot">2</span><span><b>2003 and 2005</b> stand out as the most extreme fire years since 2001.</span></li>
+        <li><span class="dot">3</span><span><b>November 2026 is running at 57%</b> of a typical November in the region, with data through 14 November.</span></li>
+        <li><span class="dot">4</span><span>Works for any area: Guatemala alone shows 672,000 hotspots and an April–May peak.</span></li>
+      </ul>
+      <img class="shot" src="img/anomaly.png" alt="Calendar compared with a normal year" />
+    </div>
+  </div><span class="brandline"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/></svg>EmberCal · Bush Coding</span><span class="num">4 / 7</span></section>
+
+  <!-- 5 -->
+  <section class="slide"><div class="in">
+    <h2>How we put MODIS and VIIRS on one scale</h2>
+    <div class="steps">
+      <div class="step"><h3><span class="dot">1</span>Same pixel size</h3><p>VIIRS detections in the same ~1 km cell and satellite pass are counted once, like one MODIS pixel. This removes 26% of VIIRS double counts.</p></div>
+      <div class="step"><h3><span class="dot">2</span>Same number of satellites</h3><p>Months before Aqua (July 2002) are scaled by the Terra + Aqua / Terra ratio learned for each month of the year from 2003–2019.</p></div>
+      <div class="step"><h3><span class="dot">3</span>Calibrated where both overlap</h3><p>From 2012 both sensors watch the same fires: we learn the VIIRS / MODIS ratio for every 1° area and month, with statistical shrinkage where fires are rare.</p></div>
+      <div class="step"><h3><span class="dot">4</span>Ready for the next change</h3><p>When the Suomi NPP feed stopped on 2 Nov 2026, NOAA-20 VIIRS took over, scaled by the ratio measured on the days both observed.</p></div>
+    </div>
+  </div><span class="brandline"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/></svg>EmberCal · Bush Coding</span><span class="num">5 / 7</span></section>
+
+  <!-- 6 -->
+  <section class="slide"><div class="in">
+    <h2>It works: a blind test on six years it never saw</h2>
+    <p class="sub">Calibrated only with 2012–2019, then asked to predict from MODIS alone what VIIRS would see in 2020–2025, area by area and month by month (4,188 comparisons).</p>
+    <div class="cols even">
+      <div class="stats stack">
+        <div class="stat"><span>Raw MODIS, no harmonization</span><span class="v">75%</span><span>typical error</span></div>
+        <div class="stat"><span>One single ratio for the region</span><span class="v">39%</span><span>typical error</span></div>
+        <div class="stat win"><span>EmberCal harmonization</span><span class="v">30%</span><span>typical error</span></div>
+      </div>
+      <img class="shot" src="img/blindtest.png" alt="Blind test: VIIRS measured vs predicted from MODIS" />
+    </div>
+  </div><span class="brandline"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/></svg>EmberCal · Bush Coding</span><span class="num">6 / 7</span></section>
+
+  <!-- 7 -->
+  <section class="slide"><div class="in">
+    <h2>Why it matters, and what comes next</h2>
+    <div class="cols even">
+      <ul class="pts">
+        <li><span class="dot">1</span><span><b>For fire managers and municipalities:</b> know when your area really burns and spot an unusual season early.</span></li>
+        <li><span class="dot">2</span><span><b>Built on open NASA data:</b> FIRMS MODIS (Terra, Aqua) and VIIRS (Suomi NPP, NOAA-20), 2.4 million hotspots, 2000 to this week.</span></li>
+        <li><span class="dot">3</span><span><b>Open and reproducible:</b> code, data pipeline and method are public.</span></li>
+      </ul>
+      <ul class="pts">
+        <li><span class="dot">→</span><span><b>Next:</b> email alerts when a month runs above normal.</span></li>
+        <li><span class="dot">→</span><span><b>Next:</b> the rest of Latin America, and burned area alongside hotspots.</span></li>
+        <li><span class="dot">→</span><span><span class="url">embercal.vercel.app</span><br /><span class="url">github.com/fredericjasmin/embercal</span></span></li>
+      </ul>
+    </div>
+  </div><span class="brandline"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#241a14"/><rect x="13.2" y="13.2" width="5.6" height="5.6" rx="1.6" fill="#e57a3f"/></svg>EmberCal · Bush Coding</span><span class="num">7 / 7</span></section>
+
+</main>
+<script>
+  // decorative mini calendar on the title slide (static pattern, 8 rows x 12 months)
+  const ramp = ['#fbeee4','#f8d7bf','#f4bb93','#ee9a66','#e3783e','#cd5a24','#a8441a','#7d3214'];
+  const season = [3,4,6,7,6,2,1,1,1,2,2,3];
+  const box = document.getElementById('calmini');
+  for (let r = 0; r < 8; r++) for (let m = 0; m < 12; m++) {
+    const v = Math.max(0, Math.min(7, season[m] + ((r * 7 + m * 3) % 3) - 1));
+    const i = document.createElement('i'); i.style.background = ramp[v]; box.appendChild(i);
+  }
+</script>
+</body>
+</html>

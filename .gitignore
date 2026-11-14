@@ -10,3 +10,4 @@ data/raw
 data/raw_2026
 dist
 node_modules
+.playwright-mcp
