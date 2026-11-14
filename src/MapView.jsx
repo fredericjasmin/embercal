@@ -38,24 +38,39 @@ export default function MapView({ g, totals, mask, tool, onDrawn, onPick, sel, r
     recentLayer.current = L.layerGroup().addTo(m)
     selLayer.current = L.layerGroup().addTo(m)
 
-    // rectangle drawing (mouse) and point picking (mouse or touch)
-    let start = null, rect = null
-    m.on('mousedown', e => {
-      if (toolRef.current.tool !== 'box') return
-      m.dragging.disable()
-      start = e.latlng
-      rect = L.rectangle([start, start], { color: SEL_COLOR, weight: 2, fill: false, dashArray: '4 4' }).addTo(m)
-    })
-    m.on('mousemove', e => { if (start && rect) rect.setBounds([start, e.latlng]) })
-    m.on('mouseup', e => {
-      if (!start) return
-      const b = L.latLngBounds(start, e.latlng)
+    // rectangle drawing with pointer events (mouse, pen and touch); captured before Leaflet sees them
+    const box = el.current
+    let start = null, rect = null, pid = null
+    const toLatLng = e => m.mouseEventToLatLng(e)
+    const down = e => {
+      if (toolRef.current.tool !== 'box' || (e.button != null && e.button > 0)) return
+      if (e.target.closest && e.target.closest('.leaflet-control')) return
+      e.preventDefault(); e.stopPropagation()
+      pid = e.pointerId
+      try { box.setPointerCapture(pid) } catch { /* ignore */ }
+      start = toLatLng(e)
+      rect = L.rectangle([start, start], { color: SEL_COLOR, weight: 2, fill: false, dashArray: '4 4', interactive: false }).addTo(m)
+    }
+    const move = e => {
+      if (!start || e.pointerId !== pid) return
+      e.preventDefault(); e.stopPropagation()
+      rect.setBounds([start, toLatLng(e)])
+    }
+    const up = e => {
+      if (!start || e.pointerId !== pid) return
+      e.preventDefault(); e.stopPropagation()
+      const b = L.latLngBounds(start, toLatLng(e))
       m.removeLayer(rect); rect = null; start = null
-      m.dragging.enable()
+      try { box.releasePointerCapture(pid) } catch { /* ignore */ }
+      pid = null
       if (b.getNorth() - b.getSouth() > 0.05 && b.getEast() - b.getWest() > 0.05) {
         toolRef.current.onDrawn({ s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() })
       }
-    })
+    }
+    box.addEventListener('pointerdown', down, true)
+    box.addEventListener('pointermove', move, true)
+    box.addEventListener('pointerup', up, true)
+    box.addEventListener('pointercancel', up, true)
     m.on('click', e => {
       if (toolRef.current.tool === 'point') toolRef.current.onPick({ lat: e.latlng.lat, lon: e.latlng.lng })
     })
@@ -64,7 +79,12 @@ export default function MapView({ g, totals, mask, tool, onDrawn, onPick, sel, r
   }, [])
 
   useEffect(() => {
+    const m = map.current
     el.current.style.cursor = tool ? 'crosshair' : ''
+    el.current.style.touchAction = tool === 'box' ? 'none' : ''
+    if (!m) return
+    if (tool === 'box') { m.dragging.disable(); m.touchZoom.disable(); m.doubleClickZoom.disable() }
+    else { m.dragging.enable(); m.touchZoom.enable(); m.doubleClickZoom.enable() }
   }, [tool])
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { loadGrid, selectionMask, aggregate, cellTotals, toCalendar, baselines, percentileRank, inShape, SERIES } from './data'
+import { loadGrid, loadLive, selectionMask, aggregate, cellTotals, toCalendar, baselines, percentileRank, inShape, SERIES } from './data'
 import MapView from './MapView'
 import Calendar from './Calendar'
 import { LineChart, MonthlyProfile } from './Charts'
@@ -56,7 +56,14 @@ function Shell() {
   const route = useRoute()
   const { t, lang, setLang } = useT()
   const [g, setG] = useState(null)
-  useEffect(() => { loadGrid().then(setG) }, [])
+  const [failed, setFailed] = useState(false)
+  const [live, setLive] = useState(null)
+  const load = () => {
+    setFailed(false)
+    loadGrid().then(grid => { setG(grid); loadLive(grid).then(setLive) }).catch(() => setFailed(true))
+  }
+  useEffect(load, [])
+  useEffect(() => { document.title = t('doc.title') }, [lang])
 
   return (
     <>
@@ -80,8 +87,10 @@ function Shell() {
         </div>
       </header>
       <main className="container">
-        {!g ? <Skeleton />
-          : route === 'method' ? <Method g={g} /> : <Explore g={g} />}
+        {failed ? (
+          <div className="load-error" role="alert"><p>{t('err.load')}</p><button className="btn" onClick={load}>{t('err.retry')}</button></div>
+        ) : !g ? <Skeleton />
+          : route === 'method' ? <Method g={g} /> : <Explore g={g} live={live} />}
       </main>
       <footer className="foot">
         <div className="container foot-in">
@@ -158,7 +167,7 @@ function outlook(base, nowM, nowDay) {
   return { med, total, max, months, share, inside, weeks, start: best.start, end }
 }
 
-function Explore({ g }) {
+function Explore({ g, live }) {
   const { t, lang, months: MONTHS, country } = useT()
   const init = useMemo(() => readState(g), [g])
   const [sel, setSel] = useState(init.sel)
@@ -223,7 +232,9 @@ function Explore({ g }) {
   const ol = useMemo(() => outlook(base, lm.m, pm ? pm.days : 15), [base, lm.m, pm])
 
   // active fires of the last 7 days, flagged inside / outside the selection
-  const recent = g.recent && g.recent.last7
+  const recent = live ? live.points : g.recent && g.recent.last7
+  const recentFrom = live ? live.from : g.recent && g.recent.last7From
+  const recentTo = live ? live.to : g.recent && g.recent.lastDay
   const recentFlags = useMemo(() => {
     if (!recent) return []
     return recent.map(([lat, lon]) => {
@@ -400,7 +411,7 @@ function Explore({ g }) {
           {recent && (
             <div className="live">
               <span className="dot-live" />
-              <span>{t('live', recentIn.length, dayLabel(g.recent.last7From), dayLabel(g.recent.lastDay))}</span>
+              <span>{t('live', recentIn.length, dayLabel(recentFrom), dayLabel(recentTo))}{live && <span className="live-src"> {t('live.src')}</span>}</span>
             </div>
           )}
         </div>

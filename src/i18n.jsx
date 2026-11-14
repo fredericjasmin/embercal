@@ -18,6 +18,8 @@ const D = {
   en: {
     'nav.explore': 'Explore', 'nav.method': 'Method', 'nav.lang': 'Language',
     loading: 'Loading 25 years of satellite hotspots…',
+    'err.load': 'The fire data could not be loaded. Check your connection and try again.', 'err.retry': 'Try again',
+    'doc.title': 'EmberCal · Harmonized burning calendar for Central America',
     'foot.built': 'EmberCal · built by team Bush Coding for the 2026 NASA Space Apps Challenge',
     'foot.data': 'Fire data: NASA FIRMS active fire products, MODIS Collection 6.1 (Terra and Aqua) and VIIRS 375 m (Suomi NPP, NOAA-20). Not an official NASA product.',
     'foot.source': 'Source code',
@@ -63,6 +65,7 @@ const D = {
     'tile.ratioUp': (r, m) => `${r}× a typical ${m}`, 'tile.ratioDown': (p, m) => `${p}% of a typical ${m}`,
     'tile.pct': p => `, above ${p}% of past years.`, 'tile.noHist': 'No history for this month.',
     live: (n, a, b) => <><strong>{n.toLocaleString('en-US')}</strong> active {n === 1 ? 'fire' : 'fires'} detected in this area in the last 7 days ({a} to {b}).</>,
+    'live.src': 'Live from NASA FIRMS, refreshed every hour.',
     'ol.title': 'Fire season outlook',
     'ol.desc': n => `What a normal year looks like here, month by month, based on ${n} years of harmonized data.`,
     'ol.now': 'The critical period is now.', 'ol.week': 'The critical period starts this week.',
@@ -88,6 +91,8 @@ const D = {
   es: {
     'nav.explore': 'Explorar', 'nav.method': 'Método', 'nav.lang': 'Idioma',
     loading: 'Cargando 25 años de focos de calor satelitales…',
+    'err.load': 'No se pudieron cargar los datos de incendios. Revisá tu conexión y volvé a intentar.', 'err.retry': 'Reintentar',
+    'doc.title': 'EmberCal · Calendario de quemas armonizado para Centroamérica',
     'foot.built': 'EmberCal · hecho por el equipo Bush Coding para el NASA Space Apps Challenge 2026',
     'foot.data': 'Datos de incendios: productos de fuego activo de NASA FIRMS, MODIS Colección 6.1 (Terra y Aqua) y VIIRS 375 m (Suomi NPP, NOAA-20). No es un producto oficial de la NASA.',
     'foot.source': 'Código fuente',
@@ -133,6 +138,7 @@ const D = {
     'tile.ratioUp': (r, m) => `${r}× un ${m} típico`, 'tile.ratioDown': (p, m) => `${p}% de un ${m} típico`,
     'tile.pct': p => `, por encima del ${p}% de los años anteriores.`, 'tile.noHist': 'No hay historia para este mes.',
     live: (n, a, b) => <><strong>{n.toLocaleString('en-US')}</strong> {n === 1 ? 'incendio activo detectado' : 'incendios activos detectados'} en esta área en los últimos 7 días ({a} al {b}).</>,
+    'live.src': 'En vivo desde NASA FIRMS, se actualiza cada hora.',
     'ol.title': 'Pronóstico de la temporada de fuego',
     'ol.desc': n => `Cómo es un año normal aquí, mes a mes, según ${n} años de datos armonizados.`,
     'ol.now': 'El período crítico es ahora.', 'ol.week': 'El período crítico empieza esta semana.',

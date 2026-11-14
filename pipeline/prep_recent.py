@@ -32,6 +32,7 @@ for f in glob.glob(os.path.join(RAW, '*.csv')):
     d = d[d['type'] != 0]
     static |= set(zip(np.floor(d.latitude / 0.01).astype(int), np.floor(d.longitude / 0.01).astype(int)))
 print('static 0.01deg cells', len(static))
+json.dump(sorted([list(map(int, k)) for k in static]), open(os.path.join(OUT, 'static_cells.json'), 'w'), separators=(',', ':'))
 
 
 def load(name):

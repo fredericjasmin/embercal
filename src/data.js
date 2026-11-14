@@ -12,9 +12,10 @@ let cache = null
 
 export async function loadGrid() {
   if (cache) return cache
+  const ok = r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }
   const [grid, validation] = await Promise.all([
-    fetch('/data/grid.json').then(r => r.json()),
-    fetch('/data/validation.json').then(r => r.json()),
+    fetch('/data/grid.json').then(ok),
+    fetch('/data/validation.json').then(ok),
   ])
   let recent = null
   try {
@@ -149,4 +150,28 @@ export function percentileRank(sortedVals, x) {
   let below = 0
   for (const v of sortedVals) if (v < x) below++
   return Math.round((below / sortedVals.length) * 100)
+}
+
+// live active fires of the last 7 days (serverless /api/recent); null if unavailable
+export async function loadLive(g) {
+  try {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 8000)
+    const [r, st] = await Promise.all([
+      fetch('/api/recent', { signal: ctrl.signal }),
+      fetch('/data/static_cells.json').then(x => (x.ok ? x.json() : [])).catch(() => []),
+    ])
+    const staticCells = new Set(st.map(([i, j]) => `${i},${j}`))
+    clearTimeout(timer)
+    if (!r.ok) return null
+    const j = await r.json()
+    if (!j || !Array.isArray(j.points) || !j.lastDay) return null
+    // keep only points over the seven countries (cells present in the harmonized grid)
+    // and drop places the archive flags as volcanoes or industrial heat sources (NRT data has no type flag)
+    const points = j.points.filter(([lat, lon]) => g.cellIndex.has(`${Math.floor(lat / g.cell)},${Math.floor(lon / g.cell)}`)
+      && !staticCells.has(`${Math.floor(lat / 0.01)},${Math.floor(lon / 0.01)}`))
+    return { points, from: j.from, to: j.lastDay }
+  } catch {
+    return null
+  }
 }

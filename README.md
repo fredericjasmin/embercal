@@ -34,6 +34,12 @@ python -m venv .venv && .venv/Scripts/pip install pandas numpy shapely
 .venv/Scripts/python pipeline/prep_recent.py   # adds 2026 to the series
 ```
 
+Refresh 2026 and the last 7 days in one step: `npm run data:recent`.
+
+### Live active fires
+
+`api/recent.js` is a Vercel serverless function that fetches the last 7 days of active fires from the FIRMS area API (VIIRS NOAA-20, VIIRS S-NPP, MODIS), cached for one hour. Set `FIRMS_MAP_KEY` in the Vercel project environment to enable it; without it the app uses the bundled data. `npm run dev` serves the same endpoint locally using `.env`.
+
 ## Data
 
 - NASA FIRMS: MODIS Collection 6.1 (Terra, Aqua), VIIRS 375 m (Suomi NPP, NOAA-20). https://firms.modaps.eosdis.nasa.gov/
