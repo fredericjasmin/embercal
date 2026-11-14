@@ -1,0 +1,12 @@
+
+.env
+.env*
+.env.*
+.venv
+.vercel
+.vercel
+__pycache__
+data/raw
+data/raw_2026
+dist
+node_modules
