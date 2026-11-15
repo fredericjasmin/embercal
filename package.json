@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "data:recent": ".venv/Scripts/python pipeline/fetch_recent.py && .venv/Scripts/python pipeline/prep_recent.py"
+    "data:recent": "python pipeline/run_recent.py"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.1",
